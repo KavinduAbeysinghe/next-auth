@@ -6,10 +6,12 @@ import {redirect, useRouter} from "next/navigation";
 import {useSession} from "next-auth/react";
 import IsAuthClient from "@/app/util/IsAuthClient";
 import CustomButton from "@/app/components/CustomButton";
+import {useEffect, useLayoutEffect} from "react";
+import {axiosInstance} from "@/app/store/store";
 
 const Home = () => {
 
-    const {data: session} = useSession();
+    const {data: session, update} = useSession();
 
     const router = useRouter();
 

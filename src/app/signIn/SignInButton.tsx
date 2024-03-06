@@ -1,8 +1,9 @@
 "use client";
 
-import {signIn} from "next-auth/react";
+import {signIn, useSession} from "next-auth/react";
 import {Button} from "@mui/material";
 import {useRouter} from "next/navigation";
+import {axiosInstance} from "@/app/store/store";
 
 const SignInButton = ({provider}: any) => {
 

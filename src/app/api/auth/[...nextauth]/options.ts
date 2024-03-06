@@ -2,8 +2,10 @@ import {getServerSession, NextAuthOptions} from "next-auth";
 import AzureAD from "next-auth/providers/azure-ad";
 import {GetServerSidePropsContext, NextApiRequest, NextApiResponse} from "next";
 import axios from "axios";
-import {decode} from "next-auth/jwt";
 import {decodeJwt} from "jose";
+import {axiosInstance} from "@/app/store/store";
+import {getToken} from "next-auth/jwt";
+import {getSession} from "next-auth/react";
 
 const refreshAccessToken = async (token: any) => {
     try {
@@ -39,7 +41,7 @@ const options: NextAuthOptions = {
             clientSecret: process.env.AZURE_AD_CLIENT_SECRET as string,
             authorization: {
                 params: {
-                    scope: 'offline_access openid profile email',
+                    scope: 'offline_access openid profile email User.ReadBasic.All',
                 },
             },
         })
@@ -53,15 +55,28 @@ const options: NextAuthOptions = {
                 token.accessTokenExpires = account.expires_at * 1000;
                 token.refreshToken = account.refresh_token;
             }
-            console.log("TOKEN ->", token);
-            if (Date.now() < (token.accessTokenExpires as number)) {
-                return token;
-            }
-            return refreshAccessToken(token);
+            return token;
+            // console.log("TOKEN ->", token);
+            // if (Date.now() < (token.accessTokenExpires as number)) {
+            //     return token;
+            // }
+            // return refreshAccessToken(token);
         },
         session: async ({session, token}) => {
             const decodedToken = decodeJwt(token.accessToken as string);
             return {...session, accessToken: token.accessToken, roles: decodedToken.roles};
+        },
+        signIn: async ({user, account, profile, email, credentials}) => {
+            const accessToken = account?.access_token;
+            if (accessToken) {
+                const res = await axiosInstance.post(`/login?token=${accessToken}&account=microsoft`);
+                if (res?.data?.status === 202) {
+                    account.access_token = res?.data?.data;
+                    return true;
+                }
+                return false;
+            }
+            return false;
         }
     },
     secret: process.env.NEXTAUTH_SECRET,
